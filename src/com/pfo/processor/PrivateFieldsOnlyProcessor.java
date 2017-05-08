@@ -12,6 +12,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -32,14 +33,20 @@ public class PrivateFieldsOnlyProcessor extends AbstractProcessor {
     }
 
     @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment env) {
+    public boolean process(Set<? extends TypeElement> annotations,
+                           RoundEnvironment env) {
         for (TypeElement ann : annotations) {
-            Set<? extends Element> e2s = env.getElementsAnnotatedWith(ann);
-            for (Element e2 : e2s) {
-                Set<Modifier> modifiers = e2.getModifiers();
-                if (!modifiers.contains(Modifier.PRIVATE)) {
-                    messager.printMessage(Kind.ERROR,
-                            "Incapsulation violation. Make all public fields private or protected", e2);
+            Set<? extends Element> annotatedElements = env.getElementsAnnotatedWith(ann);
+
+            for (Element ae : annotatedElements) {
+                List<? extends Element> innerElements = ae.getEnclosedElements();
+
+                for (Element ie : innerElements) {
+                    Set<Modifier> modifiers = ie.getModifiers();
+                    if (modifiers.contains(Modifier.PUBLIC)) {
+                        messager.printMessage(Kind.ERROR,
+                                "Incapsulation violation. Make all public fields private or protected", ie);
+                    }
                 }
             }
         }
